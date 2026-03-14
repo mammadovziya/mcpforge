@@ -1,8 +1,21 @@
 import { IdeConfig } from "./types";
 
+function createLocalStdioProcessConfig(safeName: string): {
+  command: string;
+  args: string[];
+} {
+  return {
+    command: "/bin/bash",
+    args: [
+      "-lc",
+      `export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"; exec node "$HOME/mcp-servers/${safeName}/index.js"`,
+    ],
+  };
+}
+
 export function generateIdeConfigs(repoName: string): IdeConfig[] {
   const safeName = repoName.toLowerCase().replace(/[^a-z0-9-]/g, "-");
-  const serverPath = `~/mcp-servers/${safeName}/index.js`;
+  const localProcessConfig = createLocalStdioProcessConfig(safeName);
 
   return [
     {
@@ -13,8 +26,7 @@ export function generateIdeConfigs(repoName: string): IdeConfig[] {
         {
           mcpServers: {
             [safeName]: {
-              command: "node",
-              args: [serverPath],
+              ...localProcessConfig,
             },
           },
         },
@@ -30,8 +42,7 @@ export function generateIdeConfigs(repoName: string): IdeConfig[] {
         {
           mcpServers: {
             [safeName]: {
-              command: "node",
-              args: [serverPath],
+              ...localProcessConfig,
             },
           },
         },
@@ -48,8 +59,7 @@ export function generateIdeConfigs(repoName: string): IdeConfig[] {
           servers: {
             [safeName]: {
               type: "stdio",
-              command: "node",
-              args: [serverPath],
+              ...localProcessConfig,
             },
           },
         },
@@ -65,8 +75,7 @@ export function generateIdeConfigs(repoName: string): IdeConfig[] {
         {
           mcpServers: {
             [safeName]: {
-              command: "node",
-              args: [serverPath],
+              ...localProcessConfig,
             },
           },
         },
@@ -82,8 +91,12 @@ export function generateIdeConfigs(repoName: string): IdeConfig[] {
         {
           mcpServers: {
             [safeName]: {
-              command: "node",
-              args: [serverPath],
+              $typeName:
+                "exa.cascade_plugins_pb.CascadePluginCommandTemplate",
+              ...localProcessConfig,
+              env: {
+                PATH: "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+              },
             },
           },
         },
