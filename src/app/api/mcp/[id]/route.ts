@@ -5,6 +5,26 @@ import { z } from "zod";
 
 export const maxDuration = 120;
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Accept, MCP-Protocol-Version, Last-Event-ID, mcp-session-id",
+};
+
+function withCors(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(CORS_HEADERS)) {
+    headers.set(key, value);
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -137,19 +157,63 @@ async function handleMcpRequest(
   try {
     record = await getMcpServer(id);
   } catch {
-    return new Response(JSON.stringify({ error: "Database error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return withCors(
+      new Response(JSON.stringify({ error: "Database error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
   }
 
   if (!record) {
-    return new Response(
-      JSON.stringify({ error: "MCP server not found" }),
-      {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      }
+    return withCors(
+      new Response(
+        JSON.stringify({ error: "MCP server not found" }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      )
+    );
+  }
+
+  const accept = request.headers.get("accept") || "";
+  const isGet = request.method.toUpperCase() === "GET";
+  const isMcpGet = accept.includes("text/event-stream");
+
+  if (isGet && !isMcpGet) {
+    return withCors(
+      new Response(
+        JSON.stringify(
+          {
+            status: "ok",
+            message:
+              "This is an MCP endpoint. Use an MCP client or send Accept: text/event-stream.",
+            server: {
+              id,
+              name: record.repo_name,
+              toolCount: record.tools.length,
+              tools: record.tools.map((tool) => ({
+                name: tool.name,
+                description: tool.description,
+              })),
+            },
+            usage: {
+              endpoint: request.url,
+              requiredHeaders: {
+                GET: "Accept: text/event-stream",
+                POST: "Accept: application/json, text/event-stream",
+              },
+            },
+          },
+          null,
+          2
+        ),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      )
     );
   }
 
@@ -166,9 +230,16 @@ async function handleMcpRequest(
   // Let the transport handle the actual request (GET/POST/DELETE)
   const response = await transport.handleRequest(request);
 
-  return response;
+  return withCors(response);
 }
 
 export const GET = handleMcpRequest;
 export const POST = handleMcpRequest;
 export const DELETE = handleMcpRequest;
+
+export async function OPTIONS(): Promise<Response> {
+  return new Response(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}

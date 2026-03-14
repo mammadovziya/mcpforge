@@ -179,7 +179,7 @@ export function generateRemoteIdeConfigs(
         {
           mcpServers: {
             [safeName]: {
-              url: liveUrl,
+              serverURL: liveUrl,
             },
           },
         },
