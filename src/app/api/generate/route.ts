@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { parseRepoUrl, fetchRepoContent } from "@/lib/github";
 import { generateMcpServer } from "@/lib/openai";
-import { generateIdeConfigs, generateRemoteIdeConfigs } from "@/lib/configs";
+import { generateIdeConfigs } from "@/lib/configs";
 import { saveMcpServer } from "@/lib/supabase";
 
 export const maxDuration = 120;
@@ -136,7 +136,8 @@ export async function POST(request: NextRequest) {
         // Save to Supabase and get live URL
         let serverId: string | undefined;
         let liveUrl: string | undefined;
-        let remoteIdeConfigs = ideConfigs;
+        let installScriptUrl: string | undefined;
+        let installCommand: string | undefined;
 
         try {
           const toolsWithImpl = (aiResult.tools || []).map((t) => ({
@@ -159,12 +160,8 @@ export async function POST(request: NextRequest) {
           });
 
           liveUrl = `${baseUrl}/api/mcp/${serverId}`;
-
-          // Generate remote IDE configs that point to the live URL
-          remoteIdeConfigs = generateRemoteIdeConfigs(
-            repoContent.repoName,
-            liveUrl
-          );
+          installScriptUrl = `${baseUrl}/api/install/${serverId}`;
+          installCommand = `curl -fsSL ${installScriptUrl} | bash`;
         } catch (dbErr) {
           // Don't fail the whole generation if DB save fails
           console.error("Failed to save to database:", dbErr);
@@ -187,9 +184,11 @@ export async function POST(request: NextRequest) {
             packageJson: aiResult.package_json,
             readme: aiResult.readme || "",
             setupInstructions: aiResult.setup_instructions || "",
-            ideConfigs: remoteIdeConfigs,
+            ideConfigs,
             serverId,
             liveUrl,
+            installScriptUrl,
+            installCommand,
           },
         });
       } catch (err) {

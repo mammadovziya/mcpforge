@@ -15,8 +15,13 @@ interface ResultsPanelProps {
 export function ResultsPanel({ result }: ResultsPanelProps) {
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-8 space-y-8 animate-fade-in">
-      {result.liveUrl && (
-        <LiveServerPanel liveUrl={result.liveUrl} repoName={result.repoName} />
+      {(result.liveUrl || result.installCommand) && (
+        <LiveServerPanel
+          liveUrl={result.liveUrl}
+          repoName={result.repoName}
+          installScriptUrl={result.installScriptUrl}
+          installCommand={result.installCommand}
+        />
       )}
       <RepoSummary summary={result.repoSummary} repoName={result.repoName} />
       <ToolsList tools={result.tools} />

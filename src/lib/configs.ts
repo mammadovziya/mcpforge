@@ -2,8 +2,7 @@ import { IdeConfig } from "./types";
 
 export function generateIdeConfigs(repoName: string): IdeConfig[] {
   const safeName = repoName.toLowerCase().replace(/[^a-z0-9-]/g, "-");
-  const home = process.env.HOME || process.env.USERPROFILE || "/home/user";
-  const serverPath = `${home}/mcp-servers/${safeName}/index.js`;
+  const serverPath = `~/mcp-servers/${safeName}/index.js`;
 
   return [
     {

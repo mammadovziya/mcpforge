@@ -23,6 +23,8 @@ export interface GenerateResult {
   ideConfigs: IdeConfig[];
   serverId?: string;
   liveUrl?: string;
+  installScriptUrl?: string;
+  installCommand?: string;
 }
 
 export interface ProgressStep {
